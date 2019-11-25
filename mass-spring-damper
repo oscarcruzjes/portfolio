@@ -1,0 +1,127 @@
+% Project - Mass-Spring-Damper System
+% Engineering 201: Engineering Analysis I
+% Professor Tuzcu 
+% Oscar J. Cruz 
+%%
+% The following code was generated to solve a mass-spring-damper system 
+% of differential equations using the method of integration. 
+%% 
+clc % clear command window
+clear % clear workspace
+%% Parameters of the system
+
+% masses
+m1 = 2; % kg
+m2 = 3; % kg
+m3 = 3; % kg
+
+% spring constants 
+k1 = 300; % N/m
+k2 = 200; % N/m
+k3 = 300; %
+
+% damping constants
+c1 = 120; % Ns/m
+c2 = 160; % Ns/m
+c3 = 120; % Ns/m
+
+% initial conditions in meters
+v1_0 = 0;
+v2_0 = 0;
+v3_0 = 0;
+x1_0 = 0.1;
+x2_0 = 0;
+x3_0 = -0.1;
+C = [v1_0; v2_0; v3_0; x1_0; x2_0; x3_0]; % inital conditions matrix 
+
+%% Finding eigen values and eigenvectors of matrix A
+
+% Matrix A
+A = [-(c1+c2)/m1, c2/m1, 0, -(k1+k2)/m1, k2/m1, 0; ...
+    c2/m2, -(c2+c3)/m2, c3/m2, k2/m2, -(k2+k3)/m2, k3/m2; ...
+    0, c3/m3, -c3/m3, 0, k3/m3, -k3/m3;...
+    1 0 0 0 0 0; ...
+    0 1 0 0 0 0; ...
+    0 0 1 0 0 0];
+
+[Q,D] = eig(A);  % Q is the eigenvectors
+                % D is the diagonalized maxtrix containing eigennvalues
+Q_inverse = inv(Q); % inverse eigenvector Q
+
+fprintf('The eigenvector A = \n')
+disp(A) 
+fprintf('The eigenvector Q = \n')
+disp(Q) 
+fprintf('The diagonalized matrix D with eigen values = \n')
+disp(D)
+fprintf('The eigenvector Q^(-1) = \n')
+disp(Q_inverse)
+
+%%  Solving for x(t) 
+
+eigenval = diag(D); % eigen values in a 6x1 array
+
+syms t tau % symbolic variables for t (time) and tau
+
+% diagonalized exponential eigen value matrix 
+exp_D = diag([exp(eigenval(1)*t), exp(eigenval(2)*t), exp(eigenval(3)*t), ...
+              exp(eigenval(4)*t), exp(eigenval(5)*t), exp(eigenval(6)*t)]);
+
+% e^(A*t)
+expA = Q*exp_D*Q_inverse;
+
+% e(A*(t-tau))
+expA_tminustau = subs(expA,t,t-tau); % substituting t with t-tau 
+
+% forcing function matrix in terms of tau for integration
+f_tau = [0; 0; 20*(1-exp(-tau))/m3;0;0;0]; 
+
+% x(t) = e^(A*t)*C + int(e^(A*(t-tau)*f(tau)),tau,0,t)
+% integrating from 0 to t with respects to tau
+x(t) = expA*C  + int(expA_tminustau*f_tau,tau,0,t);
+
+% time interval from 0 to 10 w/ 0.05 second increments
+time = 0:0.05:10; 
+
+% cell to table conversion
+solution_table = cell2table(x(time));  
+
+% table to array and double precision
+solution_array = double(table2array(solution_table)); 
+
+% array vectors from time 0 to 10
+v1 = solution_array(1,:);
+v2 = solution_array(2,:);
+v3 = solution_array(3,:);
+x1 = solution_array(4,:);
+x2 = solution_array(5,:);
+x3 = solution_array(6,:);
+
+% velocity graphs
+figure(1)
+plot(time,v1)
+hold on
+plot(time,v2)
+plot(time,v3)
+grid on
+xlabel('Time (s)')
+ylabel('Velocity, v(t)')
+title('Velocity vs Time')
+legend('v_1(t)','v_2(t)','v_3(t)')
+ylim([-0.25 0.25])
+axis on
+hold off
+
+% position graphs
+figure(2)
+plot(time,x1)
+hold on
+plot(time,x2)
+plot(time,x3)
+grid on
+xlabel('Time (s)')
+ylabel('Displacement, x(t)')
+title('Displacement vs Time')
+legend('x_1(t)','x_2(t)','x_3(t)')
+ylim([-0.12 0.25])
+hold off
